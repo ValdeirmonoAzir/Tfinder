@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="pt-br" data-bs-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#1B3F94">
+    <title>Locais – TFinder</title>
+    <script>document.documentElement.dataset.bsTheme = localStorage.getItem("tf_tema") || "light";</script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="css/style.css" rel="stylesheet">
+</head>
+<body data-pagina="locais">
+    <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+        <div class="container">
+            <a class="navbar-brand" href="dashboard.html"><i class="bi bi-pc-display-horizontal"></i> TFinder</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#menu" aria-label="Abrir menu"><span class="navbar-toggler-icon"></span></button>
+            <div class="collapse navbar-collapse" id="menu">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item"><a class="nav-link" href="dashboard.html"><i class="bi bi-house"></i> Início</a></li>
+                    <li class="nav-item"><a class="nav-link" href="reservas.html"><i class="bi bi-calendar-check"></i> Reservas</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="locais.html"><i class="bi bi-building"></i> Locais</a></li>
+                    <li class="nav-item"><a class="nav-link" href="recursos.html"><i class="bi bi-pc-display"></i> Equipamentos</a></li>
+                    <li class="nav-item"><a class="nav-link" href="notificacoes.html"><i class="bi bi-bell"></i> Avisos<span id="badge" class="badge bg-success ms-1 d-none"></span></a></li>
+                    <li class="nav-item so-admin"><a class="nav-link" href="usuarios.html"><i class="bi bi-people"></i> Usuários</a></li>
+                    <li class="nav-item so-admin"><a class="nav-link" href="turmas.html"><i class="bi bi-mortarboard"></i> Turmas</a></li>
+                    <li class="nav-item so-admin"><a class="nav-link" href="relatorios.html"><i class="bi bi-bar-chart"></i> Relatórios</a></li>
+                </ul>
+                <div class="d-flex flex-wrap align-items-center gap-2 mt-3 mt-lg-0">
+                    <span class="quem" id="quem"></span>
+                    <button class="btn btn-outline-light btn-sm" id="btn-tema" onclick="alternarTema()">Modo escuro</button>
+                    <button class="btn btn-success btn-sm" onclick="sair()"><i class="bi bi-box-arrow-right"></i> Sair</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+    <main class="container py-4">
+        <div class="pagina-cab d-flex flex-wrap justify-content-between align-items-end gap-2">
+            <div><h1>Locais</h1><p>A Coordenação guarda as TVs e os laboratórios móveis; cada laboratório guarda seus computadores.</p></div>
+        </div>
+        <form id="f-crud" class="card p-3 p-md-4 mb-4 so-admin">
+            <input type="hidden" name="__id">
+            <h2 class="h5 mb-3" id="crud-titulo">Novo local</h2>
+            <div class="row g-3">
+                <div class="col-md-4"><label class="form-label">Nome</label><input class="form-control" type="text" name="nome" autocomplete="off" ></div>
+                <div class="col-md-4"><label class="form-label">Tipo</label><select class="form-select" name="tipo" ><option>Coordenação</option><option>Laboratório móvel</option><option>Sala</option><option>Outro</option></select></div>
+                <div class="col-md-4"><label class="form-label">Fica dentro de</label><select class="form-select" name="id_local_pai" data-fonte="locais:id_local:nome"><option value="">— nenhum (local principal) —</option></select></div>
+                <div class="col-md-4"><label class="form-label">Bloco</label><input class="form-control" type="text" name="bloco" autocomplete="off" ></div>
+                <div class="col-md-4"><label class="form-label">Capacidade</label><input class="form-control" type="number" name="capacidade" autocomplete="off" ></div>
+            </div>
+            <div class="mt-4 d-flex gap-2">
+                <button class="btn btn-primary" type="submit" id="crud-salvar">Cadastrar</button>
+                <button class="btn btn-outline-secondary d-none" type="button" id="crud-cancelar">Cancelar edição</button>
+            </div>
+        </form>
+        <div class="busca"><i class="bi bi-search"></i><input class="form-control" id="busca" placeholder="Pesquisar..."></div>
+        <div class="card card-tabela"><div class="table-responsive">
+            <table class="table table-hover align-middle mb-0 tabela-cartoes ">
+                <thead><tr><th>Local</th><th>Tipo</th><th>Dentro de</th><th>Bloco</th><th>Equipamentos</th><th>Locais internos</th><th></th></tr></thead>
+                <tbody id="linhas"></tbody>
+            </table>
+        </div></div>
+    </main>
+    <div id="avisos" class="position-fixed top-0 end-0 p-3" style="z-index: 2000; width: min(380px, 100%);"></div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
+    <script src="js/comum.js"></script>
+    <script src="js/crud.js"></script>
+    <script src="js/locais.js"></script>
+</body>
+</html>

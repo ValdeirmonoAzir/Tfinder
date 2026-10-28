@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: tfinder
+    runtime: python
+    plan: free
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: gunicorn --chdir backend app:app --workers 1 --threads 4 --bind 0.0.0.0:$PORT
+    healthCheckPath: /saude
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.3
+      - key: TFINDER_SECRET        # chave de segurança do login, gerada pelo Render
+        generateValue: true
+      - key: TFINDER_ADMIN_SENHA   # senha do administrador: o Render pergunta ao criar
+        sync: false
+    # --- Opcional (plano pago): manter o banco entre reinícios ---
+    # Troque "plan: free" por "plan: starter", tire o # das linhas abaixo e adicione a variável TFINDER_DB=/var/data/tfinder.db
+    # disk:
+    #   name: dados
+    #   mountPath: /var/data
+    #   sizeGB: 1
