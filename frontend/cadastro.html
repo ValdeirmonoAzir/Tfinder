@@ -17,31 +17,73 @@
     <div class="auth-grade">
         <aside class="auth-marca">
             <div class="auth-logo-claro"><i class="bi bi-pc-display-horizontal"></i> TFinder</div>
-            <h2>Reserve computadores e TVs sem conflito de horário.</h2>
+            <h2>Reserve computadores e televisores sem conflitos de horário.</h2>
             <ul>
-                <li><i class="bi bi-calendar-check"></i> Veja a disponibilidade em tempo real</li>
-                <li><i class="bi bi-building"></i> Encontre os equipamentos de cada laboratório</li>
-                <li><i class="bi bi-bell"></i> Receba avisos sobre suas reservas</li>
+                <li><i class="bi bi-calendar-check-fill"></i> Veja a disponibilidade de cada recurso em tempo real</li>
+                <li><i class="bi bi-building-fill"></i> Localize equipamentos em cada sala e laboratório móvel</li>
+                <li><i class="bi bi-bell-fill"></i> Receba avisos instantâneos sobre a aprovação das reservas</li>
             </ul>
         </aside>
         <section class="auth-form">
-            <button class="btn btn-sm btn-outline-secondary tema-flutuante" onclick="alternarTema()">Modo escuro</button>
+            <button class="btn btn-sm btn-outline-secondary tema-flutuante" onclick="alternarTema()">
+                <i class="bi bi-moon-stars"></i> Modo escuro
+            </button>
             <div class="auth-caixa">
                 <div class="auth-logo"><i class="bi bi-pc-display-horizontal"></i> TFinder</div>
-                <h2 class="h4 mb-1">Criar conta</h2>
-                <p class="text-secondary mb-4">Preencha seus dados para acessar o sistema.</p>
+                <h2 class="h4 mb-1 fw-bold">Criar sua conta</h2>
+                <p class="text-secondary mb-4 small">Preencha seus dados institucionais para solicitar reservas.</p>
+                
                 <form id="f-cadastro">
-                    <input class="form-control mb-3" name="nome" placeholder="Nome completo" required>
-                    <input class="form-control mb-3" type="email" name="email" placeholder="E-mail" inputmode="email" required pattern="[^@\s]+@[^@\s]+\.[^@\s]{2,}" maxlength="120" title="Informe um e-mail válido, como nome@dominio.com">
-                    <input class="form-control mb-3" type="email" name="email2" placeholder="Confirme o e-mail" inputmode="email" required pattern="[^@\s]+@[^@\s]+\.[^@\s]{2,}" maxlength="120" title="Informe um e-mail válido, como nome@dominio.com">
-                    <div class="row g-3 mb-3">
-                        <div class="col-6"><input class="form-control" name="matricula" placeholder="Matrícula" required></div>
-                        <div class="col-6"><input class="form-control" name="telefone" type="tel" placeholder="Telefone"></div>
+                    <div class="mb-3">
+                        <label class="form-label">Nome Completo</label>
+                        <input class="form-control" name="nome" placeholder="Ex.: Lucas Mendes" required autocomplete="name">
                     </div>
-                    <select class="form-select mb-3" name="tipo"><option>Aluno</option><option>Professor</option></select>
-                    <input class="form-control mb-4" type="password" name="senha" placeholder="Senha (mín. 6 caracteres)" autocomplete="new-password" required minlength="6">
-                    <button class="btn btn-success w-100" type="submit">Cadastrar</button>
-                    <a class="d-block mt-3 small" href="login.html">Já tenho conta</a>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">E-mail Institucional</label>
+                        <input class="form-control" type="email" name="email" placeholder="nome@escola.com" inputmode="email" required pattern="[^@\s]+@[^@\s]+\.[^@\s]{2,}" maxlength="120" autocomplete="username">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Confirmação do E-mail</label>
+                        <input class="form-control" type="email" name="email2" placeholder="Digite o e-mail novamente" inputmode="email" required pattern="[^@\s]+@[^@\s]+\.[^@\s]{2,}" maxlength="120">
+                    </div>
+                    
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label">Matrícula</label>
+                            <input class="form-control" name="matricula" placeholder="Ex.: ALU-2026" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Telefone</label>
+                            <input class="form-control" name="telefone" type="tel" placeholder="(00) 00000-0000" inputmode="tel">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Seu Perfil na Instituição</label>
+                        <select class="form-select" name="tipo">
+                            <option>Aluno</option>
+                            <option>Professor</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="form-label">Crie uma Senha</label>
+                        <div class="input-group">
+                            <input class="form-control" type="password" name="senha" placeholder="Mínimo 6 caracteres" autocomplete="new-password" required minlength="6">
+                            <button class="btn btn-outline-secondary btn-toggle-senha" type="button"><i class="bi bi-eye"></i></button>
+                        </div>
+                    </div>
+                    
+                    <button class="btn btn-success w-100 py-2" type="submit" id="btn-cadastrar">
+                        <i class="bi bi-person-check"></i> Concluir Cadastro
+                    </button>
+                    
+                    <div class="text-center mt-3 small">
+                        <span class="text-secondary">Já possui cadastro?</span>
+                        <a href="login.html" class="fw-bold ms-1">Fazer login</a>
+                    </div>
                 </form>
             </div>
         </section>

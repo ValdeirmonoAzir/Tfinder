@@ -30,19 +30,31 @@
                     <li class="nav-item so-admin"><a class="nav-link" href="relatorios.html"><i class="bi bi-bar-chart"></i> Relatórios</a></li>
                 </ul>
                 <div class="d-flex flex-wrap align-items-center gap-2 mt-3 mt-lg-0">
-                    <span class="quem" id="quem"></span>
-                    <button class="btn btn-outline-light btn-sm" id="btn-tema" onclick="alternarTema()">Modo escuro</button>
+                    <div id="quem"></div>
+                    <button class="btn btn-outline-light btn-sm" id="btn-tema" onclick="alternarTema()"><i class="bi bi-moon-stars"></i> Modo escuro</button>
                     <button class="btn btn-success btn-sm" onclick="sair()"><i class="bi bi-box-arrow-right"></i> Sair</button>
                 </div>
             </div>
         </div>
     </nav>
+
     <main class="container py-4">
-        <div class="pagina-cab d-flex flex-wrap justify-content-between align-items-end gap-2">
-            <div><h1>Avisos</h1><p>Atualizações sobre as suas reservas.</p></div>
+        <div class="pagina-cab d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <div>
+                <h1>Central de Avisos</h1>
+                <p>Notificações e atualizações sobre o andamento das suas solicitações e reservas.</p>
+            </div>
+            <div class="d-flex gap-2" id="acoes-notif">
+                <button class="btn btn-outline-secondary btn-sm" id="btn-marcar-lidas"><i class="bi bi-check2-all"></i> Marcar todas como lidas</button>
+                <button class="btn btn-outline-danger btn-sm" id="btn-limpar-todas"><i class="bi bi-trash"></i> Limpar avisos</button>
+            </div>
         </div>
-        <div class="list-group" id="lista"></div>
+
+        <div class="card p-0 shadow-sm border-0 overflow-hidden">
+            <div class="list-group list-group-flush" id="lista"></div>
+        </div>
     </main>
+
     <div id="avisos" class="position-fixed top-0 end-0 p-3" style="z-index: 2000; width: min(380px, 100%);"></div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
     <script src="js/comum.js"></script>

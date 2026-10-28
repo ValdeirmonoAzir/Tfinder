@@ -1,4 +1,5 @@
-from database import consultar
+from datetime import date, datetime
+from database import consultar, executar
 from models.base import Modelo
 
 perfil = Modelo("perfil", "id_perfil", ["nome", "descricao"], obrigatorios=["nome"])
@@ -54,8 +55,20 @@ class ModeloReserva(Modelo):
             (id_recurso, data, fim, inicio, ignorar or 0)))
 
     def ocupadas(self, id_recurso, data):
+        self.atualizar_concluidas()
         return self.listar("WHERE t.id_recurso = ? AND t.data_reserva = ? AND t.status = 'Confirmada'",
                            (id_recurso, data))
+
+    def atualizar_concluidas(self):
+        """Atualiza reservas confirmadas cujo horário já passou para 'Concluída'."""
+        hoje = date.today().isoformat()
+        agora = datetime.now().strftime("%H:%M")
+        executar("""
+            UPDATE reserva 
+            SET status = 'Concluída' 
+            WHERE status = 'Confirmada' 
+              AND (data_reserva < ? OR (data_reserva = ? AND hora_fim <= ?))
+        """, (hoje, hoje, agora))
 
 
 reserva = ModeloReserva(

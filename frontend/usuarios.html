@@ -30,42 +30,96 @@
                     <li class="nav-item so-admin"><a class="nav-link" href="relatorios.html"><i class="bi bi-bar-chart"></i> Relatórios</a></li>
                 </ul>
                 <div class="d-flex flex-wrap align-items-center gap-2 mt-3 mt-lg-0">
-                    <span class="quem" id="quem"></span>
-                    <button class="btn btn-outline-light btn-sm" id="btn-tema" onclick="alternarTema()">Modo escuro</button>
+                    <div id="quem"></div>
+                    <button class="btn btn-outline-light btn-sm" id="btn-tema" onclick="alternarTema()"><i class="bi bi-moon-stars"></i> Modo escuro</button>
                     <button class="btn btn-success btn-sm" onclick="sair()"><i class="bi bi-box-arrow-right"></i> Sair</button>
                 </div>
             </div>
         </div>
     </nav>
+
     <main class="container py-4">
-        <div class="pagina-cab d-flex flex-wrap justify-content-between align-items-end gap-2">
-            <div><h1>Usuários</h1><p>Gerencie quem tem acesso ao sistema.</p></div>
+        <div class="pagina-cab d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <div>
+                <h1>Gestão de Usuários</h1>
+                <p>Controle os cadastros, perfis de acesso e permissões de alunos, professores e administradores.</p>
+            </div>
         </div>
+
         <form id="f-crud" class="card p-3 p-md-4 mb-4 so-admin">
             <input type="hidden" name="__id">
-            <h2 class="h5 mb-3" id="crud-titulo">Novo usuário</h2>
+            <h2 class="h5 mb-3 d-flex align-items-center gap-2" id="crud-titulo">
+                <i class="bi bi-person-plus text-primary"></i> Novo usuário
+            </h2>
             <div class="row g-3">
-                <div class="col-md-4"><label class="form-label">Nome completo</label><input class="form-control" type="text" name="nome" autocomplete="off" ></div>
-                <div class="col-md-4"><label class="form-label">E-mail</label><input class="form-control" type="email" name="email" autocomplete="off" pattern="[^@\s]+@[^@\s]+\.[^@\s]{2,}" maxlength="120" title="Informe um e-mail válido, como nome@dominio.com"></div>
-                <div class="col-md-4"><label class="form-label">Senha (em branco = manter)</label><input class="form-control" type="password" name="senha" autocomplete="off" autocomplete="new-password"></div>
-                <div class="col-md-4"><label class="form-label">Matrícula</label><input class="form-control" type="text" name="matricula" autocomplete="off" ></div>
-                <div class="col-md-4"><label class="form-label">Telefone</label><input class="form-control" type="tel" name="telefone" autocomplete="off" ></div>
-                <div class="col-md-4"><label class="form-label">Perfil</label><select class="form-select" name="id_perfil" data-fonte="perfis:id_perfil:nome"></select></div>
-                <div class="col-md-4"><label class="form-label">Situação</label><select class="form-select" name="ativo" data-num="1"><option value="1">Ativo</option><option value="0">Inativo</option></select></div>
+                <div class="col-12 col-md-4">
+                    <label class="form-label">Nome Completo</label>
+                    <input class="form-control" type="text" name="nome" placeholder="Ex.: Maria Souza" required autocomplete="off">
+                </div>
+                <div class="col-12 col-md-4">
+                    <label class="form-label">E-mail Institucional</label>
+                    <input class="form-control" type="email" name="email" placeholder="usuario@escola.com" required autocomplete="off" pattern="[^@\s]+@[^@\s]+\.[^@\s]{2,}" maxlength="120">
+                </div>
+                <div class="col-12 col-md-4">
+                    <label class="form-label">Senha (em branco = manter)</label>
+                    <div class="input-group">
+                        <input class="form-control" type="password" name="senha" placeholder="Mínimo 6 caracteres" autocomplete="new-password">
+                        <button class="btn btn-outline-secondary btn-toggle-senha" type="button"><i class="bi bi-eye"></i></button>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <label class="form-label">Matrícula</label>
+                    <input class="form-control" type="text" name="matricula" placeholder="Ex.: MAT-1029" required autocomplete="off">
+                </div>
+                <div class="col-6 col-md-3">
+                    <label class="form-label">Telefone</label>
+                    <input class="form-control" type="tel" name="telefone" placeholder="(00) 00000-0000" autocomplete="off">
+                </div>
+                <div class="col-6 col-md-3">
+                    <label class="form-label">Perfil de Acesso</label>
+                    <select class="form-select" name="id_perfil" data-fonte="perfis:id_perfil:nome"></select>
+                </div>
+                <div class="col-6 col-md-3">
+                    <label class="form-label">Situação da Conta</label>
+                    <select class="form-select" name="ativo" data-num="1">
+                        <option value="1">Ativo</option>
+                        <option value="0">Inativo</option>
+                    </select>
+                </div>
             </div>
             <div class="mt-4 d-flex gap-2">
-                <button class="btn btn-primary" type="submit" id="crud-salvar">Cadastrar</button>
+                <button class="btn btn-primary" type="submit" id="crud-salvar"><i class="bi bi-check-lg"></i> Salvar Usuário</button>
                 <button class="btn btn-outline-secondary d-none" type="button" id="crud-cancelar">Cancelar edição</button>
             </div>
         </form>
-        <div class="busca"><i class="bi bi-search"></i><input class="form-control" id="busca" placeholder="Pesquisar..."></div>
-        <div class="card card-tabela"><div class="table-responsive">
-            <table class="table table-hover align-middle mb-0 tabela-cartoes ">
-                <thead><tr><th>Nome</th><th>E-mail</th><th>Matrícula</th><th>Perfil</th><th>Situação</th><th class=so-admin></th></tr></thead>
-                <tbody id="linhas"></tbody>
-            </table>
-        </div></div>
+
+        <div class="barra-ferramentas">
+            <div class="busca">
+                <i class="bi bi-search"></i>
+                <input class="form-control" id="busca" placeholder="Pesquisar por nome, e-mail ou matrícula...">
+            </div>
+        </div>
+
+        <div class="card card-tabela">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0 tabela-cartoes">
+                    <thead>
+                        <tr>
+                            <th>Usuário</th>
+                            <th>E-mail</th>
+                            <th>Matrícula</th>
+                            <th>Telefone</th>
+                            <th>Perfil</th>
+                            <th>Situação</th>
+                            <th class="text-end so-admin">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="linhas"></tbody>
+                </table>
+            </div>
+        </div>
     </main>
+
     <div id="avisos" class="position-fixed top-0 end-0 p-3" style="z-index: 2000; width: min(380px, 100%);"></div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
     <script src="js/comum.js"></script>

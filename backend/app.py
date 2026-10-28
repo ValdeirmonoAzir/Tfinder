@@ -2,7 +2,7 @@ import os
 import re
 import socket
 import sqlite3
-from datetime import date
+from datetime import date, datetime
 from functools import wraps
 
 from flask import Flask, request, jsonify, g
@@ -26,6 +26,32 @@ iniciar_banco()
 
 
 EMAIL_RE = re.compile(r"^[A-Za-z0-9]+([._%+-][A-Za-z0-9]+)*@[A-Za-z0-9]+(-[A-Za-z0-9]+)*(\.[A-Za-z0-9]+(-[A-Za-z0-9]+)*)*\.[A-Za-z]{2,}$")
+DATA_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+HORA_RE = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")
+
+
+@app.after_request
+def cabecalhos_seguranca(resposta):
+    resposta.headers["X-Content-Type-Options"] = "nosniff"
+    resposta.headers["X-Frame-Options"] = "SAMEORIGIN"
+    resposta.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    return resposta
+
+
+@app.errorhandler(400)
+@app.errorhandler(404)
+@app.errorhandler(405)
+@app.errorhandler(500)
+def lidar_erros_http(e):
+    if request.path.startswith("/api/"):
+        codigo = getattr(e, "code", 500)
+        msg = getattr(e, "description", "Erro no processamento da solicitação.")
+        if codigo == 404:
+            msg = "Rota da API não encontrada."
+        elif codigo == 405:
+            msg = "Método HTTP não permitido para esta rota."
+        return erro(msg, codigo)
+    return e
 
 
 def email_valido(email):
@@ -107,7 +133,43 @@ def esqueci_senha():
 @app.get("/api/me")
 @auth()
 def me():
-    return publico(g.usuario)
+    u = usuario.buscar(g.usuario["id_usuario"])
+    return jsonify(publico(u))
+
+
+@app.put("/api/me")
+@auth()
+def atualizar_me():
+    d = dados_json()
+    id_u = g.usuario["id_usuario"]
+    u_atual = usuario.por_email(g.usuario["email"])
+    if not u_atual:
+        return erro("Usuário não encontrado.", 404)
+
+    alteracoes = {}
+    nome = str(d.get("nome") or "").strip()
+    if nome:
+        if len(nome) < 3:
+            return erro("O nome deve ter pelo menos 3 caracteres.")
+        alteracoes["nome"] = nome
+
+    if "telefone" in d:
+        alteracoes["telefone"] = str(d.get("telefone") or "").strip() or None
+
+    nova_senha = str(d.get("nova_senha") or "")
+    if nova_senha:
+        senha_atual = str(d.get("senha_atual") or "")
+        if not senha_atual or not check_password_hash(u_atual["senha"], senha_atual):
+            return erro("Senha atual incorreta para autorizar a troca de senha.")
+        if len(nova_senha) < 6:
+            return erro("A nova senha deve ter pelo menos 6 caracteres.")
+        alteracoes["senha"] = generate_password_hash(nova_senha)
+
+    if alteracoes:
+        usuario.atualizar(id_u, alteracoes)
+
+    atualizado = usuario.buscar(id_u)
+    return jsonify({"mensagem": "Perfil atualizado com sucesso.", "usuario": publico(atualizado)})
 
 
 # ---------------- usuários ----------------
@@ -244,28 +306,63 @@ def detalhe_local(id):
 # ---------------- reservas ----------------
 def checar_reserva(d, ignorar=None):
     r = recurso.buscar(d.get("id_recurso"))
-    data, inicio, fim = d["data_reserva"], d["hora_inicio"], d["hora_fim"]
+    data = str(d.get("data_reserva") or "").strip()
+    inicio = str(d.get("hora_inicio") or "").strip()
+    fim = str(d.get("hora_fim") or "").strip()
     if r is None:
         return "Recurso não encontrado."
-    if data < date.today().isoformat():
+    if not DATA_RE.match(data):
+        return "Data inválida. Use o formato AAAA-MM-DD."
+    try:
+        date.fromisoformat(data)
+    except ValueError:
+        return "Data do calendário inválida."
+    if not HORA_RE.match(inicio) or not HORA_RE.match(fim):
+        return "Horário inválido. Use o formato HH:MM (ex.: 08:30)."
+    hoje = date.today().isoformat()
+    if data < hoje:
         return "Não é possível reservar em data passada."
+    agora_hora = datetime.now().strftime("%H:%M")
+    if data == hoje and fim <= agora_hora:
+        return "O horário da reserva já encerrou para o dia de hoje."
     if inicio >= fim:
         return "O horário de término deve ser depois do início."
     if r["status"] == "Em manutenção":
-        return "Este recurso está em manutenção."
+        return "Este recurso está em manutenção e não pode ser reservado."
     if g.usuario["perfil"] == "Aluno" and r["tipo"] != "Computador":
         return "Alunos podem reservar apenas computadores."
     if reserva.conflito(r["id_recurso"], data, inicio, fim, ignorar):
-        return "Recurso indisponível: já existe reserva nesse horário."
+        return "Recurso indisponível: já existe reserva confirmada nesse horário."
     return None
 
 
 @app.get("/api/reservas")
 @auth()
 def listar_reservas():
-    if eh_admin():
-        return jsonify(reserva.listar())
-    return jsonify(reserva.listar("WHERE t.id_usuario = ?", (g.usuario["id_usuario"],)))
+    reserva.atualizar_concluidas()
+    condicoes = []
+    params = []
+    if not eh_admin():
+        condicoes.append("t.id_usuario = ?")
+        params.append(g.usuario["id_usuario"])
+
+    status_filtro = request.args.get("status")
+    if status_filtro:
+        condicoes.append("t.status = ?")
+        params.append(status_filtro)
+
+    data_filtro = request.args.get("data")
+    if data_filtro:
+        condicoes.append("t.data_reserva = ?")
+        params.append(data_filtro)
+
+    recurso_filtro = request.args.get("id_recurso")
+    if recurso_filtro:
+        condicoes.append("t.id_recurso = ?")
+        params.append(recurso_filtro)
+
+    onde = ("WHERE " + " AND ".join(condicoes)) if condicoes else ""
+    return jsonify(reserva.listar(onde, tuple(params)))
 
 
 def descricao(r):
@@ -374,7 +471,7 @@ def recusar_reserva(id):
 @app.get("/api/notificacoes")
 @auth()
 def listar_notificacoes():
-    return jsonify(notificacao.listar("WHERE t.id_usuario = ?", (g.usuario["id_usuario"],))[:30])
+    return jsonify(notificacao.listar("WHERE t.id_usuario = ?", (g.usuario["id_usuario"],))[:50])
 
 
 @app.post("/api/notificacoes/ler-todas")
@@ -384,12 +481,40 @@ def ler_todas():
     return {"mensagem": "Notificações marcadas como lidas."}
 
 
+@app.post("/api/notificacoes/<int:id>/ler")
+@auth()
+def ler_notificacao(id):
+    n = notificacao.buscar(id)
+    if not n or n["id_usuario"] != g.usuario["id_usuario"]:
+        return erro("Notificação não encontrada.", 404)
+    executar("UPDATE notificacao SET lida = 1 WHERE id_notificacao = ?", (id,))
+    return {"mensagem": "Notificação marcada como lida."}
+
+
+@app.delete("/api/notificacoes/<int:id>")
+@auth()
+def excluir_notificacao(id):
+    n = notificacao.buscar(id)
+    if not n or n["id_usuario"] != g.usuario["id_usuario"]:
+        return erro("Notificação não encontrada.", 404)
+    notificacao.excluir(id)
+    return {"mensagem": "Notificação removida."}
+
+
+@app.delete("/api/notificacoes")
+@auth()
+def limpar_notificacoes():
+    executar("DELETE FROM notificacao WHERE id_usuario = ?", (g.usuario["id_usuario"],))
+    return {"mensagem": "Todas as notificações foram removidas."}
+
+
 # ---------------- relatórios ----------------
 @app.get("/api/relatorios")
 @auth(admin=True)
 def relatorios():
+    reserva.atualizar_concluidas()
     periodo = (request.args.get("inicio") or "0000-01-01", request.args.get("fim") or "9999-12-31")
-    horas = "ROUND(SUM((julianday('2000-01-01 ' || t.hora_fim) - julianday('2000-01-01 ' || t.hora_inicio)) * 24), 1)"
+    horas = "ROUND(COALESCE(SUM((julianday('2000-01-01 ' || t.hora_fim) - julianday('2000-01-01 ' || t.hora_inicio)) * 24), 0), 1)"
     usadas = "t.data_reserva BETWEEN ? AND ? AND t.status IN ('Confirmada', 'Concluída')"
     return jsonify({
         "resumo": consultar("SELECT t.status AS status, COUNT(*) AS total FROM reserva t "

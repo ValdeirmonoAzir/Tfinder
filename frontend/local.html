@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#1B3F94">
-    <title>Local – TFinder</title>
+    <title>Detalhes do Local – TFinder</title>
     <script>document.documentElement.dataset.bsTheme = localStorage.getItem("tf_tema") || "light";</script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -22,7 +22,7 @@
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item"><a class="nav-link" href="dashboard.html"><i class="bi bi-house"></i> Início</a></li>
                     <li class="nav-item"><a class="nav-link" href="reservas.html"><i class="bi bi-calendar-check"></i> Reservas</a></li>
-                    <li class="nav-item"><a class="nav-link" href="locais.html"><i class="bi bi-building"></i> Locais</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="locais.html"><i class="bi bi-building"></i> Locais</a></li>
                     <li class="nav-item"><a class="nav-link" href="recursos.html"><i class="bi bi-pc-display"></i> Equipamentos</a></li>
                     <li class="nav-item"><a class="nav-link" href="notificacoes.html"><i class="bi bi-bell"></i> Avisos<span id="badge" class="badge bg-success ms-1 d-none"></span></a></li>
                     <li class="nav-item so-admin"><a class="nav-link" href="usuarios.html"><i class="bi bi-people"></i> Usuários</a></li>
@@ -30,37 +30,57 @@
                     <li class="nav-item so-admin"><a class="nav-link" href="relatorios.html"><i class="bi bi-bar-chart"></i> Relatórios</a></li>
                 </ul>
                 <div class="d-flex flex-wrap align-items-center gap-2 mt-3 mt-lg-0">
-                    <span class="quem" id="quem"></span>
-                    <button class="btn btn-outline-light btn-sm" id="btn-tema" onclick="alternarTema()">Modo escuro</button>
+                    <div id="quem"></div>
+                    <button class="btn btn-outline-light btn-sm" id="btn-tema" onclick="alternarTema()"><i class="bi bi-moon-stars"></i> Modo escuro</button>
                     <button class="btn btn-success btn-sm" onclick="sair()"><i class="bi bi-box-arrow-right"></i> Sair</button>
                 </div>
             </div>
         </div>
     </nav>
+
     <main class="container py-4">
-        <nav aria-label="Você está em"><ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="locais.html">Locais</a></li>
-            <li class="breadcrumb-item d-none" id="bc-pai"></li>
-            <li class="breadcrumb-item active" id="bc-nome"></li>
-        </ol></nav>
-        <div class="pagina-cab d-flex flex-wrap justify-content-between align-items-end gap-2">
-            <div><h1 id="l-nome"></h1><p id="l-info"></p></div>
+        <nav aria-label="Você está em">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="locais.html"><i class="bi bi-arrow-left"></i> Todos os Locais</a></li>
+                <li class="breadcrumb-item d-none" id="bc-pai"></li>
+                <li class="breadcrumb-item active" id="bc-nome"></li>
+            </ol>
+        </nav>
+
+        <div class="pagina-cab d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <div>
+                <h1 id="l-nome" class="d-flex align-items-center gap-2"></h1>
+                <div id="l-info" class="mt-2 d-flex flex-wrap align-items-center gap-2"></div>
+            </div>
             <a class="btn btn-primary so-admin" id="add-equip" href="recursos.html"><i class="bi bi-plus-lg"></i> Adicionar equipamento aqui</a>
         </div>
+
         <section id="sec-sub" class="d-none mb-4">
-            <h2 class="h5 mb-3" id="sub-titulo"></h2>
+            <h2 class="h5 mb-3" id="sub-titulo"><i class="bi bi-diagram-2 text-primary me-1"></i> Sublocais internos</h2>
             <div class="row g-3" id="sublocais"></div>
         </section>
+
         <section>
-            <h2 class="h5 mb-3" id="equip-titulo">Equipamentos</h2>
-        <div class="card card-tabela"><div class="table-responsive">
-            <table class="table table-hover align-middle mb-0 tabela-cartoes ">
-                <thead><tr><th>Equipamento</th><th>Tipo</th><th>Patrimônio</th><th>Status</th><th></th></tr></thead>
-                <tbody id="equip"></tbody>
-            </table>
-        </div></div>
+            <h2 class="h5 mb-3" id="equip-titulo"><i class="bi bi-pc-display text-primary me-1"></i> Equipamentos neste local</h2>
+            <div class="card card-tabela">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0 tabela-cartoes">
+                        <thead>
+                            <tr>
+                                <th>Equipamento</th>
+                                <th>Tipo</th>
+                                <th>Patrimônio</th>
+                                <th>Status</th>
+                                <th class="text-end">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="equip"></tbody>
+                    </table>
+                </div>
+            </div>
         </section>
     </main>
+
     <div id="avisos" class="position-fixed top-0 end-0 p-3" style="z-index: 2000; width: min(380px, 100%);"></div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
     <script src="js/comum.js"></script>

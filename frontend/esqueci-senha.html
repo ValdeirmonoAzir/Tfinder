@@ -17,25 +17,48 @@
     <div class="auth-grade">
         <aside class="auth-marca">
             <div class="auth-logo-claro"><i class="bi bi-pc-display-horizontal"></i> TFinder</div>
-            <h2>Reserve computadores e TVs sem conflito de horário.</h2>
+            <h2>Reserve computadores e televisores sem conflitos de horário.</h2>
             <ul>
-                <li><i class="bi bi-calendar-check"></i> Veja a disponibilidade em tempo real</li>
-                <li><i class="bi bi-building"></i> Encontre os equipamentos de cada laboratório</li>
-                <li><i class="bi bi-bell"></i> Receba avisos sobre suas reservas</li>
+                <li><i class="bi bi-calendar-check-fill"></i> Veja a disponibilidade de cada recurso em tempo real</li>
+                <li><i class="bi bi-building-fill"></i> Localize equipamentos em cada sala e laboratório móvel</li>
+                <li><i class="bi bi-bell-fill"></i> Receba avisos instantâneos sobre a aprovação das reservas</li>
             </ul>
         </aside>
         <section class="auth-form">
-            <button class="btn btn-sm btn-outline-secondary tema-flutuante" onclick="alternarTema()">Modo escuro</button>
+            <button class="btn btn-sm btn-outline-secondary tema-flutuante" onclick="alternarTema()">
+                <i class="bi bi-moon-stars"></i> Modo escuro
+            </button>
             <div class="auth-caixa">
                 <div class="auth-logo"><i class="bi bi-pc-display-horizontal"></i> TFinder</div>
-                <h2 class="h4 mb-1">Esqueceu a sua senha?</h2>
-                <p class="text-secondary mb-4">Confirme seu e-mail e matrícula para criar uma nova senha.</p>
+                <h2 class="h4 mb-1 fw-bold">Redefinir sua senha</h2>
+                <p class="text-secondary mb-4 small">Informe seu e-mail cadastrado e sua matrícula para registrar uma nova senha de acesso.</p>
+                
                 <form id="f-esqueci">
-                    <input class="form-control mb-3" type="email" name="email" placeholder="E-mail" inputmode="email" required pattern="[^@\s]+@[^@\s]+\.[^@\s]{2,}" maxlength="120" title="Informe um e-mail válido, como nome@dominio.com">
-                    <input class="form-control mb-3" name="matricula" placeholder="Matrícula" required>
-                    <input class="form-control mb-4" type="password" name="nova_senha" placeholder="Nova senha (mín. 6)" autocomplete="new-password" required minlength="6">
-                    <button class="btn btn-primary w-100" type="submit">Redefinir senha</button>
-                    <a class="d-block mt-3 small" href="login.html">Voltar ao login</a>
+                    <div class="mb-3">
+                        <label class="form-label">E-mail Cadastrado</label>
+                        <input class="form-control" type="email" name="email" placeholder="nome@escola.com" inputmode="email" required pattern="[^@\s]+@[^@\s]+\.[^@\s]{2,}" maxlength="120">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Matrícula</label>
+                        <input class="form-control" name="matricula" placeholder="Sua matrícula" required>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="form-label">Nova Senha</label>
+                        <div class="input-group">
+                            <input class="form-control" type="password" name="nova_senha" placeholder="Mínimo 6 caracteres" autocomplete="new-password" required minlength="6">
+                            <button class="btn btn-outline-secondary btn-toggle-senha" type="button"><i class="bi bi-eye"></i></button>
+                        </div>
+                    </div>
+                    
+                    <button class="btn btn-primary w-100 py-2" type="submit" id="btn-redefinir">
+                        <i class="bi bi-key"></i> Salvar Nova Senha
+                    </button>
+                    
+                    <div class="text-center mt-3 small">
+                        <a href="login.html" class="text-secondary"><i class="bi bi-arrow-left"></i> Voltar para a tela de login</a>
+                    </div>
                 </form>
             </div>
         </section>

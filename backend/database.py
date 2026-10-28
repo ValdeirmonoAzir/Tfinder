@@ -8,9 +8,14 @@ os.makedirs(os.path.dirname(CAMINHO_BANCO), exist_ok=True)
 
 
 def conectar():
-    conexao = sqlite3.connect(CAMINHO_BANCO)
+    conexao = sqlite3.connect(CAMINHO_BANCO, timeout=15.0)
     conexao.row_factory = sqlite3.Row
     conexao.execute("PRAGMA foreign_keys = ON")
+    try:
+        conexao.execute("PRAGMA journal_mode = WAL")
+        conexao.execute("PRAGMA synchronous = NORMAL")
+    except sqlite3.DatabaseError:
+        pass
     return conexao
 
 
@@ -134,5 +139,13 @@ def iniciar_banco():
                 ("Computador 03", "Computador", "PAT-0003", 2), ("Computador 04", "Computador", "PAT-0004", 3),
                 ("Computador 05", "Computador", "PAT-0005", 3), ("TV 01", "Televisor", "PAT-0006", 1),
                 ("TV 02", "Televisor", "PAT-0007", 1)])
+    INDICES = """
+    CREATE INDEX IF NOT EXISTS idx_reserva_conflito ON reserva(id_recurso, data_reserva, status, hora_inicio, hora_fim);
+    CREATE INDEX IF NOT EXISTS idx_reserva_usuario ON reserva(id_usuario, status);
+    CREATE INDEX IF NOT EXISTS idx_notificacao_usr ON notificacao(id_usuario, lida);
+    CREATE INDEX IF NOT EXISTS idx_recurso_local ON recurso(id_local);
+    CREATE INDEX IF NOT EXISTS idx_local_pai ON local(id_local_pai);
+    """
+    conexao.executescript(INDICES)
     conexao.commit()
     conexao.close()

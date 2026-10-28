@@ -30,40 +30,89 @@
                     <li class="nav-item so-admin"><a class="nav-link" href="relatorios.html"><i class="bi bi-bar-chart"></i> Relatórios</a></li>
                 </ul>
                 <div class="d-flex flex-wrap align-items-center gap-2 mt-3 mt-lg-0">
-                    <span class="quem" id="quem"></span>
-                    <button class="btn btn-outline-light btn-sm" id="btn-tema" onclick="alternarTema()">Modo escuro</button>
+                    <div id="quem"></div>
+                    <button class="btn btn-outline-light btn-sm" id="btn-tema" onclick="alternarTema()"><i class="bi bi-moon-stars"></i> Modo escuro</button>
                     <button class="btn btn-success btn-sm" onclick="sair()"><i class="bi bi-box-arrow-right"></i> Sair</button>
                 </div>
             </div>
         </div>
     </nav>
+
     <main class="container py-4">
-        <div class="pagina-cab d-flex flex-wrap justify-content-between align-items-end gap-2">
-            <div><h1>Locais</h1><p>A Coordenação guarda as TVs e os laboratórios móveis; cada laboratório guarda seus computadores.</p></div>
+        <div class="pagina-cab d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <div>
+                <h1>Locais e Espaços Físicos</h1>
+                <p>Navegue pelos setores da escola e veja os equipamentos e laboratórios de cada local.</p>
+            </div>
         </div>
+
         <form id="f-crud" class="card p-3 p-md-4 mb-4 so-admin">
             <input type="hidden" name="__id">
-            <h2 class="h5 mb-3" id="crud-titulo">Novo local</h2>
+            <h2 class="h5 mb-3 d-flex align-items-center gap-2" id="crud-titulo">
+                <i class="bi bi-building-add text-primary"></i> Novo local
+            </h2>
             <div class="row g-3">
-                <div class="col-md-4"><label class="form-label">Nome</label><input class="form-control" type="text" name="nome" autocomplete="off" ></div>
-                <div class="col-md-4"><label class="form-label">Tipo</label><select class="form-select" name="tipo" ><option>Coordenação</option><option>Laboratório móvel</option><option>Sala</option><option>Outro</option></select></div>
-                <div class="col-md-4"><label class="form-label">Fica dentro de</label><select class="form-select" name="id_local_pai" data-fonte="locais:id_local:nome"><option value="">— nenhum (local principal) —</option></select></div>
-                <div class="col-md-4"><label class="form-label">Bloco</label><input class="form-control" type="text" name="bloco" autocomplete="off" ></div>
-                <div class="col-md-4"><label class="form-label">Capacidade</label><input class="form-control" type="number" name="capacidade" autocomplete="off" ></div>
+                <div class="col-12 col-md-4">
+                    <label class="form-label">Nome do Local</label>
+                    <input class="form-control" type="text" name="nome" placeholder="Ex.: Laboratório 1, Sala 204" required autocomplete="off">
+                </div>
+                <div class="col-6 col-md-4">
+                    <label class="form-label">Tipo de Local</label>
+                    <select class="form-select" name="tipo">
+                        <option>Coordenação</option>
+                        <option>Laboratório móvel</option>
+                        <option>Sala</option>
+                        <option>Outro</option>
+                    </select>
+                </div>
+                <div class="col-6 col-md-4">
+                    <label class="form-label">Fica Dentro de (Opcional)</label>
+                    <select class="form-select" name="id_local_pai" data-fonte="locais:id_local:nome">
+                        <option value="">— Nenhum (Local Principal) —</option>
+                    </select>
+                </div>
+                <div class="col-6 col-md-6">
+                    <label class="form-label">Bloco / Pavilhão</label>
+                    <input class="form-control" type="text" name="bloco" placeholder="Ex.: Bloco A, 2º Andar" autocomplete="off">
+                </div>
+                <div class="col-6 col-md-6">
+                    <label class="form-label">Capacidade (Lugares)</label>
+                    <input class="form-control" type="number" name="capacidade" placeholder="Ex.: 35" autocomplete="off" min="0">
+                </div>
             </div>
             <div class="mt-4 d-flex gap-2">
-                <button class="btn btn-primary" type="submit" id="crud-salvar">Cadastrar</button>
+                <button class="btn btn-primary" type="submit" id="crud-salvar"><i class="bi bi-check-lg"></i> Cadastrar Local</button>
                 <button class="btn btn-outline-secondary d-none" type="button" id="crud-cancelar">Cancelar edição</button>
             </div>
         </form>
-        <div class="busca"><i class="bi bi-search"></i><input class="form-control" id="busca" placeholder="Pesquisar..."></div>
-        <div class="card card-tabela"><div class="table-responsive">
-            <table class="table table-hover align-middle mb-0 tabela-cartoes ">
-                <thead><tr><th>Local</th><th>Tipo</th><th>Dentro de</th><th>Bloco</th><th>Equipamentos</th><th>Locais internos</th><th></th></tr></thead>
-                <tbody id="linhas"></tbody>
-            </table>
-        </div></div>
+
+        <div class="barra-ferramentas">
+            <div class="busca">
+                <i class="bi bi-search"></i>
+                <input class="form-control" id="busca" placeholder="Pesquisar por nome do local, bloco ou tipo...">
+            </div>
+        </div>
+
+        <div class="card card-tabela">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0 tabela-cartoes">
+                    <thead>
+                        <tr>
+                            <th>Local</th>
+                            <th>Tipo</th>
+                            <th>Dentro de</th>
+                            <th>Bloco</th>
+                            <th>Equipamentos</th>
+                            <th>Locais internos</th>
+                            <th class="text-end">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="linhas"></tbody>
+                </table>
+            </div>
+        </div>
     </main>
+
     <div id="avisos" class="position-fixed top-0 end-0 p-3" style="z-index: 2000; width: min(380px, 100%);"></div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
     <script src="js/comum.js"></script>
