@@ -61,11 +61,10 @@
                     </div>
                     
                     <div class="mb-3">
-                        <label class="form-label">Seu Perfil na Instituição</label>
-                        <select class="form-select" name="tipo">
-                            <option>Aluno</option>
-                            <option>Professor</option>
-                        </select>
+                        <label class="form-label">Perfil de Acesso</label>
+                        <input class="form-control bg-body-tertiary" value="Aluno" readonly tabindex="-1">
+                        <input type="hidden" name="tipo" value="Aluno">
+                        <div class="form-text small text-secondary">Novas contas iniciam como Aluno. Professores podem confirmar seu perfil em "Meu Perfil" após o acesso.</div>
                     </div>
                     
                     <div class="mb-4">

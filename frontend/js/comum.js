@@ -288,6 +288,14 @@ function injetarModalPerfil() {
               <label class="form-label">Nome Completo</label>
               <input class="form-control" name="nome" id="perfil-nome" required>
             </div>
+            <div class="mb-3" id="campo-perfil-container">
+              <label class="form-label">Perfil Institucional</label>
+              <select class="form-select" name="perfil" id="perfil-select">
+                <option value="Aluno">Aluno</option>
+                <option value="Professor">Professor</option>
+              </select>
+              <div class="form-text small text-secondary">Professores devem confirmar sua categoria para habilitar reservas de equipamentos e turmas.</div>
+            </div>
             <div class="mb-3">
               <label class="form-label">Telefone</label>
               <input class="form-control" name="telefone" id="perfil-telefone" placeholder="(00) 00000-0000">
@@ -329,6 +337,7 @@ function injetarModalPerfil() {
     try {
       const res = await api("/me", "PUT", d);
       usuario.nome = res.usuario.nome;
+      usuario.perfil = res.usuario.perfil;
       localStorage.setItem("tf_usuario", JSON.stringify(usuario));
       renderizarNavbarUsuario();
       const elNome = $("nome");
@@ -351,6 +360,17 @@ function abrirModalPerfil() {
     $("perfil-matricula").textContent = u.matricula || "–";
     $("perfil-email").textContent = u.email || "–";
     $("perfil-telefone").value = u.telefone || "";
+    $("perfil-tag-role").textContent = u.perfil || "";
+    const container = $("campo-perfil-container");
+    const sel = $("perfil-select");
+    if (container && sel) {
+      if (u.perfil === "Administrador") {
+        container.classList.add("d-none");
+      } else {
+        container.classList.remove("d-none");
+        sel.value = u.perfil || "Aluno";
+      }
+    }
   }).catch(() => {});
   new bootstrap.Modal($("modal-perfil")).show();
 }

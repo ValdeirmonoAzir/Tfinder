@@ -109,9 +109,8 @@ def login():
 def cadastro():
     d = dados_json()
     ids = {p["nome"]: p["id_perfil"] for p in perfil.listar()}
-    if d.get("tipo") not in ("Aluno", "Professor"):
-        return erro("Escolha entre Aluno e Professor.")
-    d["id_perfil"] = ids[d["tipo"]]
+    # Novos cadastros sempre entram com perfil Aluno
+    d["id_perfil"] = ids["Aluno"]
     if str(d.get("email") or "").strip().lower() != str(d.get("email2") or "").strip().lower():
         return erro("Os e-mails informados não conferem.")
     return salvar_usuario(d, None)
@@ -155,6 +154,15 @@ def atualizar_me():
 
     if "telefone" in d:
         alteracoes["telefone"] = str(d.get("telefone") or "").strip() or None
+
+    # O usuário pode confirmar seu perfil como Professor ou Aluno em Meu Perfil
+    novo_perfil = str(d.get("perfil") or "").strip()
+    if novo_perfil:
+        if novo_perfil not in ("Aluno", "Professor"):
+            return erro("Perfil inválido. Escolha entre Aluno e Professor.")
+        if u_atual["perfil"] != "Administrador":
+            ids_perfil = {p["nome"]: p["id_perfil"] for p in perfil.listar()}
+            alteracoes["id_perfil"] = ids_perfil[novo_perfil]
 
     nova_senha = str(d.get("nova_senha") or "")
     if nova_senha:
