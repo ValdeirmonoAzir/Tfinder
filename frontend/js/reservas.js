@@ -18,15 +18,38 @@ pronto(async () => {
 
   const acoes = (r, i) => {
     const ativa = ["Pendente", "Confirmada"].includes(r.status);
-    const b = (acao, classe, icone, texto) => `
-      <button class="btn ${classe} btn-sm" data-acao="${acao}" data-i="${i}">
+    const podeDevolver = r.status === "Confirmada";
+    const b = (acao, classe, icone, texto, titulo = "") => `
+      <button class="btn ${classe} btn-sm" data-acao="${acao}" data-i="${i}" ${titulo ? `title="${titulo}"` : ""}>
         <i class="bi bi-${icone}"></i> ${texto}
       </button> `;
     return (ehAdmin() && r.status === "Pendente"
       ? b("aprovar", "btn-success", "check-lg", "Aprovar") + b("recusar", "btn-outline-danger", "x-lg", "Recusar")
       : "") +
+      (podeDevolver ? b("devolver", "btn-outline-success", "arrow-return-left", "Devolvido", "Registrar devolução do equipamento") : "") +
       (ativa ? b("editar", "btn-outline-primary", "pencil", "Editar") + b("cancelar", "btn-outline-secondary", "slash-circle", "Cancelar") : "");
   };
+
+  function infoDevolucao(r) {
+    if (r.status === "Devolvido") {
+      const horaDev = r.devolvido_em ? r.devolvido_em.split(" ")[1] || r.devolvido_em : "";
+      const dataDev = r.devolvido_em ? fmtData(r.devolvido_em.split(" ")[0]) : "";
+      const textoHora = horaDev ? `às ${horaDev}` : "";
+      const ehAntes = horaDev && r.hora_fim && horaDev < r.hora_fim;
+      return `<div class="small text-info mt-1 fw-semibold"><i class="bi bi-arrow-return-left"></i> Devolvido ${ehAntes ? "antes " : ""}${textoHora} ${dataDev && dataDev !== fmtData(r.data_reserva) ? `(${dataDev})` : ""}</div>`;
+    }
+    if (r.status === "Concluída") {
+      return `<div class="small text-secondary mt-1"><i class="bi bi-clock-history"></i> Devolvido no encerramento (${r.hora_fim})</div>`;
+    }
+    if (r.status === "Confirmada") {
+      const hoje = hojeISO();
+      const agora = new Date().toTimeString().slice(0, 5);
+      if (r.data_reserva === hoje && r.hora_inicio <= agora && r.hora_fim > agora) {
+        return `<div class="small text-primary mt-1 fw-semibold"><i class="bi bi-laptop"></i> Em uso até ${r.hora_fim}</div>`;
+      }
+    }
+    return "";
+  }
 
   function renderizarTabela() {
     const termo = ($("busca") ? $("busca").value : "").toLowerCase().trim();
@@ -75,6 +98,7 @@ pronto(async () => {
           <td>${esc(r.turma || "–")}</td>
           <td>
             ${selo(r.status)}
+            ${infoDevolucao(r)}
             ${r.motivo_recusa ? `<div class="small text-danger mt-1"><i class="bi bi-info-circle"></i> Motivo: ${esc(r.motivo_recusa)}</div>` : ""}
           </td>
           <td class="acoes text-end text-nowrap">${acoes(r, iOriginal)}</td>
@@ -129,6 +153,19 @@ pronto(async () => {
 
   f.addEventListener("submit", tentar(async (e) => {
     e.preventDefault();
+
+    const ini = f.elements.hora_inicio.value;
+    const fim = f.elements.hora_fim.value;
+    if (ini && fim) {
+      const [hI, mI] = ini.split(":").map(Number);
+      const [hF, mF] = fim.split(":").map(Number);
+      const duracao = (hF * 60 + mF) - (hI * 60 + mI);
+      if (duracao > 9 * 60) {
+        aviso("O tempo de reserva não pode ultrapassar 9 horas de duração.", "danger");
+        return;
+      }
+    }
+
     const btn = $("res-salvar");
     const textoOriginal = btn.innerHTML;
     btn.disabled = true;
@@ -153,6 +190,22 @@ pronto(async () => {
     const botao = e.target.closest("button[data-acao]");
     if (!botao) return;
     const r = reservas[botao.dataset.i], acao = botao.dataset.acao;
+
+    if (acao === "devolver") {
+      const confirmou = await confirmarModal({
+        titulo: "Registrar Devolução",
+        mensagem: `Deseja registrar a devolução do equipamento "${r.recurso}" agora? Ele será liberado imediatamente no sistema.`,
+        textoConfirmar: "Sim, Confirmar Devolução",
+        corBotao: "success",
+        icone: "arrow-return-left"
+      });
+      if (!confirmou) return;
+
+      const res = await api(`/reservas/${r.id_reserva}/devolver`, "POST");
+      aviso(res.mensagem || "Equipamento devolvido com sucesso!");
+      await carregar();
+      return;
+    }
 
     if (acao === "editar") {
       for (const n of ["id_recurso", "data_reserva", "hora_inicio", "hora_fim", "finalidade"]) {

@@ -12,6 +12,7 @@ const STATUS_INFO = {
   "Disponível": { bg: "success", ic: "check-circle" },
   "Confirmada": { bg: "success", ic: "calendar-check" },
   "Concluída": { bg: "primary", ic: "check2-all" },
+  "Devolvido": { bg: "info", ic: "arrow-return-left" },
   "Reservado": { bg: "info", ic: "bookmark-fill" },
   "Pendente": { bg: "warning", ic: "hourglass-split" },
   "Recusada": { bg: "danger", ic: "x-circle" },
@@ -370,7 +371,15 @@ function renderizarNavbarUsuario() {
 const pagina = document.body.dataset;
 let liberado = true;
 
-if (pagina.publica) {
+if (pagina.livre) {
+  // Páginas livres (ex.: /about): acessíveis com ou sem autenticação
+  if (token && usuario) {
+    document.body.classList.toggle("nao-admin", !ehAdmin());
+    renderizarNavbarUsuario();
+    atualizarBadge();
+    setInterval(atualizarBadge, 30000);
+  }
+} else if (pagina.publica) {
   if (token && usuario) {
     liberado = false;
     location.replace("dashboard.html");

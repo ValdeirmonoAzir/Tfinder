@@ -55,14 +55,19 @@ class ModeloReserva(Modelo):
             (id_recurso, data, fim, inicio, ignorar or 0)))
 
     def ocupadas(self, id_recurso, data):
-        self.atualizar_concluidas()
+        self.sincronizar_status_recursos()
         return self.listar("WHERE t.id_recurso = ? AND t.data_reserva = ? AND t.status = 'Confirmada'",
                            (id_recurso, data))
 
     def atualizar_concluidas(self):
-        """Atualiza reservas confirmadas cujo horário já passou para 'Concluída'."""
+        self.sincronizar_status_recursos()
+
+    def sincronizar_status_recursos(self):
+        """Conclui reservas vencidas e atualiza o status de cada recurso (Disponível vs Reservado)."""
         hoje = date.today().isoformat()
         agora = datetime.now().strftime("%H:%M")
+
+        # 1. Atualiza reservas confirmadas cujo horário já passou para 'Concluída'
         executar("""
             UPDATE reserva 
             SET status = 'Concluída' 
@@ -70,11 +75,39 @@ class ModeloReserva(Modelo):
               AND (data_reserva < ? OR (data_reserva = ? AND hora_fim <= ?))
         """, (hoje, hoje, agora))
 
+        # 2. Computador com reserva confirmada ativa hoje fica 'Reservado'
+        executar("""
+            UPDATE recurso 
+            SET status = 'Reservado' 
+            WHERE status != 'Em manutenção'
+              AND id_recurso IN (
+                  SELECT id_recurso FROM reserva 
+                  WHERE status = 'Confirmada' 
+                    AND data_reserva = ? 
+                    AND hora_inicio <= ? 
+                    AND hora_fim > ?
+              )
+        """, (hoje, agora, agora))
+
+        # 3. Computador sem reserva confirmada ativa volta a 'Disponível'
+        executar("""
+            UPDATE recurso 
+            SET status = 'Disponível' 
+            WHERE status = 'Reservado'
+              AND id_recurso NOT IN (
+                  SELECT id_recurso FROM reserva 
+                  WHERE status = 'Confirmada' 
+                    AND data_reserva = ? 
+                    AND hora_inicio <= ? 
+                    AND hora_fim > ?
+              )
+        """, (hoje, agora, agora))
+
 
 reserva = ModeloReserva(
     "reserva", "id_reserva",
     ["data_reserva", "hora_inicio", "hora_fim", "finalidade", "status",
-     "id_usuario", "id_recurso", "id_turma", "motivo_recusa"],
+     "id_usuario", "id_recurso", "id_turma", "motivo_recusa", "devolvido_em"],
     obrigatorios=["data_reserva", "hora_inicio", "hora_fim", "id_recurso"],
     select="""SELECT t.*, r.nome AS recurso, r.tipo, u.nome AS usuario, tu.nome AS turma
               FROM reserva t JOIN recurso r ON r.id_recurso = t.id_recurso

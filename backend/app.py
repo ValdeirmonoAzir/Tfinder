@@ -247,6 +247,8 @@ def excluir_registro(modelo, id, proprio=False):
 
 def registrar(rota, modelo, extra=None):
     def listar():
+        if rota == "recursos":
+            reserva.sincronizar_status_recursos()
         return jsonify(modelo.listar())
 
     def criar():
@@ -295,6 +297,7 @@ registrar("turmas", turma)
 @auth()
 def detalhe_local(id):
     """Abre um local: seus locais internos (ex.: laboratórios da Coordenação) e seus equipamentos."""
+    reserva.sincronizar_status_recursos()
     l = local.buscar(id)
     if not l:
         return erro("Local não encontrado.", 404)
@@ -327,6 +330,14 @@ def checar_reserva(d, ignorar=None):
         return "O horário da reserva já encerrou para o dia de hoje."
     if inicio >= fim:
         return "O horário de término deve ser depois do início."
+    
+    # Validação do limite máximo de 9 horas de duração
+    h_ini, m_ini = map(int, inicio.split(":"))
+    h_fim, m_fim = map(int, fim.split(":"))
+    duracao_minutos = (h_fim * 60 + m_fim) - (h_ini * 60 + m_ini)
+    if duracao_minutos > 9 * 60:
+        return "O tempo de reserva não pode ultrapassar 9 horas de duração."
+
     if r["status"] == "Em manutenção":
         return "Este recurso está em manutenção e não pode ser reservado."
     if g.usuario["perfil"] == "Aluno" and r["tipo"] != "Computador":
@@ -339,7 +350,7 @@ def checar_reserva(d, ignorar=None):
 @app.get("/api/reservas")
 @auth()
 def listar_reservas():
-    reserva.atualizar_concluidas()
+    reserva.sincronizar_status_recursos()
     condicoes = []
     params = []
     if not eh_admin():
@@ -387,9 +398,11 @@ def criar_reserva():
     if msg:
         return erro(msg, 409 if "indisponível" in msg else 400)
     limpo.pop("motivo_recusa", None)
+    limpo.pop("devolvido_em", None)
     # administrador reserva direto; os demais perfis dependem de aprovação
     limpo.update(id_usuario=g.usuario["id_usuario"], status="Confirmada" if eh_admin() else "Pendente")
     nova = reserva.buscar(reserva.criar(limpo))
+    reserva.sincronizar_status_recursos()
     if nova["status"] == "Pendente":
         notificar_admins(f"Nova solicitação de {g.usuario['nome']}: {descricao(nova)}.", nova["id_reserva"])
     return jsonify(nova), 201
@@ -412,11 +425,12 @@ def editar_reserva(id):
     msg = msg or checar_reserva(limpo, ignorar=id)
     if msg:
         return erro(msg, 409 if "indisponível" in msg else 400)
-    for campo in ("status", "id_usuario", "motivo_recusa"):
+    for campo in ("status", "id_usuario", "motivo_recusa", "devolvido_em"):
         limpo.pop(campo, None)
     if not eh_admin():  # alteração feita por não-admin volta para aprovação
         limpo["status"] = "Pendente"
     reserva.atualizar(id, limpo)
+    reserva.sincronizar_status_recursos()
     nova = reserva.buscar(id)
     if not eh_admin():
         notificar_admins(f"{g.usuario['nome']} alterou a solicitação: {descricao(nova)}.", id)
@@ -432,6 +446,7 @@ def cancelar_reserva(id):
     if r["status"] not in ("Pendente", "Confirmada"):
         return erro("Esta reserva já foi encerrada.")
     reserva.atualizar(id, {"status": "Cancelada"})
+    reserva.sincronizar_status_recursos()
     if r["id_usuario"] != g.usuario["id_usuario"]:
         notificar(r["id_usuario"], f"Sua reserva de {descricao(r)} foi cancelada pelo administrador.", id)
     return {"mensagem": "Reserva cancelada."}
@@ -448,6 +463,7 @@ def aprovar_reserva(id):
     if reserva.conflito(r["id_recurso"], r["data_reserva"], r["hora_inicio"], r["hora_fim"], id):
         return erro("Recurso indisponível: já existe reserva confirmada nesse horário. Recuse esta solicitação.", 409)
     reserva.atualizar(id, {"status": "Confirmada", "motivo_recusa": None})
+    reserva.sincronizar_status_recursos()
     notificar(r["id_usuario"], f"Sua reserva de {descricao(r)} foi aprovada.", id)
     return {"mensagem": "Reserva aprovada."}
 
@@ -462,9 +478,33 @@ def recusar_reserva(id):
         return erro("Só é possível recusar reservas pendentes.")
     motivo = str(dados_json().get("motivo") or "").strip() or None
     reserva.atualizar(id, {"status": "Recusada", "motivo_recusa": motivo})
+    reserva.sincronizar_status_recursos()
     texto = f"Sua reserva de {descricao(r)} foi recusada."
     notificar(r["id_usuario"], texto + (f" Motivo: {motivo}" if motivo else ""), id)
     return {"mensagem": "Reserva recusada."}
+
+
+@app.post("/api/reservas/<int:id>/devolver")
+@auth()
+def devolver_reserva(id):
+    """Permite ao usuário (professor, aluno ou administrador) registrar a devolução do equipamento."""
+    r = reserva_do_usuario(id)
+    if not r:
+        return erro("Reserva não encontrada.", 404)
+    if r["status"] != "Confirmada":
+        return erro("Apenas reservas confirmadas podem ser devolvidas.")
+    hoje = date.today().isoformat()
+    agora = datetime.now().strftime("%H:%M")
+    devolvido_em = f"{hoje} {agora}"
+    reserva.atualizar(id, {"status": "Devolvido", "devolvido_em": devolvido_em})
+    reserva.sincronizar_status_recursos()
+
+    if r["id_usuario"] != g.usuario["id_usuario"]:
+        notificar(r["id_usuario"], f"A devolução da sua reserva de {descricao(r)} foi registrada pelo administrador às {agora}.", id)
+    else:
+        notificar_admins(f"{g.usuario['nome']} registrou a devolução de {descricao(r)} às {agora}.", id)
+
+    return {"mensagem": f"Equipamento devolvido com sucesso às {agora}.", "devolvido_em": devolvido_em}
 
 
 # ---------------- notificações ----------------
@@ -474,21 +514,21 @@ def listar_notificacoes():
     return jsonify(notificacao.listar("WHERE t.id_usuario = ?", (g.usuario["id_usuario"],))[:50])
 
 
-@app.post("/api/notificacoes/ler-todas")
+@app.put("/api/notificacoes/<int:id>/lida")
 @auth()
-def ler_todas():
-    executar("UPDATE notificacao SET lida = 1 WHERE id_usuario = ?", (g.usuario["id_usuario"],))
-    return {"mensagem": "Notificações marcadas como lidas."}
-
-
-@app.post("/api/notificacoes/<int:id>/ler")
-@auth()
-def ler_notificacao(id):
+def marcar_notificacao_lida(id):
     n = notificacao.buscar(id)
     if not n or n["id_usuario"] != g.usuario["id_usuario"]:
         return erro("Notificação não encontrada.", 404)
-    executar("UPDATE notificacao SET lida = 1 WHERE id_notificacao = ?", (id,))
-    return {"mensagem": "Notificação marcada como lida."}
+    notificacao.atualizar(id, {"lida": 1})
+    return {"mensagem": "Notificação lida."}
+
+
+@app.post("/api/notificacoes/ler-todas")
+@auth()
+def ler_todas_notificacoes():
+    executar("UPDATE notificacao SET lida = 1 WHERE id_usuario = ?", (g.usuario["id_usuario"],))
+    return {"mensagem": "Todas marcadas como lidas."}
 
 
 @app.delete("/api/notificacoes/<int:id>")
@@ -512,10 +552,10 @@ def limpar_notificacoes():
 @app.get("/api/relatorios")
 @auth(admin=True)
 def relatorios():
-    reserva.atualizar_concluidas()
+    reserva.sincronizar_status_recursos()
     periodo = (request.args.get("inicio") or "0000-01-01", request.args.get("fim") or "9999-12-31")
     horas = "ROUND(COALESCE(SUM((julianday('2000-01-01 ' || t.hora_fim) - julianday('2000-01-01 ' || t.hora_inicio)) * 24), 0), 1)"
-    usadas = "t.data_reserva BETWEEN ? AND ? AND t.status IN ('Confirmada', 'Concluída')"
+    usadas = "t.data_reserva BETWEEN ? AND ? AND t.status IN ('Confirmada', 'Concluída', 'Devolvido')"
     return jsonify({
         "resumo": consultar("SELECT t.status AS status, COUNT(*) AS total FROM reserva t "
                             "WHERE t.data_reserva BETWEEN ? AND ? GROUP BY t.status", periodo),
@@ -547,6 +587,11 @@ def saude():
 @app.get("/")
 def inicio():
     return app.send_static_file("login.html")
+
+
+@app.get("/about")
+def sobre():
+    return app.send_static_file("about.html")
 
 
 def ip_local():

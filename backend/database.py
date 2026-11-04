@@ -79,12 +79,13 @@ CREATE TABLE IF NOT EXISTS reserva(
     hora_fim TEXT NOT NULL,
     finalidade TEXT,
     status TEXT NOT NULL DEFAULT 'Confirmada'
-        CHECK (status IN ('Pendente', 'Confirmada', 'Recusada', 'Cancelada', 'Concluída')),
+        CHECK (status IN ('Pendente', 'Confirmada', 'Recusada', 'Cancelada', 'Concluída', 'Devolvido')),
     data_solicitacao TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     id_usuario INTEGER NOT NULL REFERENCES usuario(id_usuario),
     id_recurso INTEGER NOT NULL REFERENCES recurso(id_recurso),
     id_turma INTEGER REFERENCES turma(id_turma),
-    motivo_recusa TEXT);
+    motivo_recusa TEXT,
+    devolvido_em TEXT);
 CREATE TABLE IF NOT EXISTS notificacao(
     id_notificacao INTEGER PRIMARY KEY AUTOINCREMENT,
     mensagem TEXT NOT NULL,
@@ -103,16 +104,43 @@ def iniciar_banco():
         conexao.execute("ALTER TABLE local ADD COLUMN id_local_pai INTEGER REFERENCES local(id_local)")
         conexao.commit()
     antiga = conexao.execute("SELECT sql FROM sqlite_master WHERE name = 'reserva'").fetchone()
-    migrar = antiga is not None and "Recusada" not in antiga[0]  # banco da versão anterior
+    migrar = antiga is not None and ("Recusada" not in antiga[0] or "Devolvido" not in antiga[0])
     if migrar:
+        conexao.execute("PRAGMA foreign_keys = OFF")
         conexao.execute("ALTER TABLE reserva RENAME TO reserva_antiga")
     conexao.executescript(TABELAS)
     if migrar:
-        colunas = ("id_reserva, data_reserva, hora_inicio, hora_fim, finalidade, status, "
-                   "data_solicitacao, id_usuario, id_recurso, id_turma")
-        conexao.execute(f"INSERT INTO reserva ({colunas}) SELECT {colunas} FROM reserva_antiga")
+        colunas_antigas = {c[1] for c in conexao.execute("PRAGMA table_info(reserva_antiga)")}
+        colunas_novas = {c[1] for c in conexao.execute("PRAGMA table_info(reserva)")}
+        comuns = [c for c in colunas_antigas if c in colunas_novas]
+        cols_str = ", ".join(comuns)
+        conexao.execute(f"INSERT INTO reserva ({cols_str}) SELECT {cols_str} FROM reserva_antiga")
         conexao.execute("DROP TABLE reserva_antiga")
+        conexao.execute("PRAGMA foreign_keys = ON")
         conexao.commit()
+
+    # Correção preventiva se notificacao apontou para reserva_antiga
+    antiga_notif = conexao.execute("SELECT sql FROM sqlite_master WHERE name = 'notificacao'").fetchone()
+    if antiga_notif and "reserva_antiga" in antiga_notif[0]:
+        conexao.execute("PRAGMA foreign_keys = OFF")
+        conexao.execute("ALTER TABLE notificacao RENAME TO notificacao_antiga")
+        conexao.execute("""
+            CREATE TABLE notificacao(
+                id_notificacao INTEGER PRIMARY KEY AUTOINCREMENT,
+                mensagem TEXT NOT NULL,
+                lida INTEGER NOT NULL DEFAULT 0 CHECK (lida IN (0, 1)),
+                data_criacao TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                id_usuario INTEGER NOT NULL REFERENCES usuario(id_usuario),
+                id_reserva INTEGER REFERENCES reserva(id_reserva) ON DELETE SET NULL)
+        """)
+        conexao.execute("""
+            INSERT INTO notificacao (id_notificacao, mensagem, lida, data_criacao, id_usuario, id_reserva)
+            SELECT id_notificacao, mensagem, lida, data_criacao, id_usuario, id_reserva FROM notificacao_antiga
+        """)
+        conexao.execute("DROP TABLE notificacao_antiga")
+        conexao.execute("PRAGMA foreign_keys = ON")
+        conexao.commit()
+
     if conexao.execute("SELECT COUNT(*) FROM perfil").fetchone()[0] == 0:
         conexao.executemany("INSERT INTO perfil (nome, descricao) VALUES (?, ?)", [
             ("Administrador", "Gerencia usuários, recursos e reservas."),
